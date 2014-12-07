@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.igrow.mall.dao.mybatis.intf.AgentDao">
+
+	<!-- 以下两个<cache>标签二选一,第一个可以输出日志,第二个不输出日志 -->  
+	<!--<cache type="org.mybatis.caches.ehcache.LoggingEhcache"/>  -->
+	<cache type="org.mybatis.caches.ehcache.EhcacheCache"/> 
+	
+	<!--返回map1-->
+	<resultMap id="AgentRM" type="TagentInfo">
+		<id property="id" column="id" />
+		<result property="agentSn" column="agent_sn"/>
+		<result property="name" column="name"/>
+		<result property="contactName" column="contact_name"/>
+		<result property="phone" column="phone"/>
+		<result property="mobile" column="mobile"/>
+		<result property="email" column="email"/>
+		<result property="address" column="address"/>
+		<result property="isSmsRemind" column="is_sms_remind"
+				typeHandler="EnumOrdinalTypeHandler" javaType="Ebool"/>
+		<result property="isEmailRemind" column="is_email_remind"
+				typeHandler="EnumOrdinalTypeHandler" javaType="Ebool"/>
+		<result property="isDelete" column="is_delete"
+				typeHandler="EnumOrdinalTypeHandler" javaType="Ebool"/>
+		<result property="status" column="status"
+				typeHandler="EnumOrdinalTypeHandler" javaType="Estatus"/>
+		<result property="createDate" column="create_date"/>
+		<result property="modifyDate" column="modify_date"/>
+		<result property="createOperator" column="create_operator"/>
+		<result property="modifyOperator" column="modify_operator"/>
+		<result property="areaDesc" column="area_desc"/>
+		<association property="province" column="province_id" javaType="Tprovinces"
+				select="com.igrow.mall.dao.mybatis.intf.ProvinceDao.find"/>	
+		<association property="city" column="city_id" javaType="Tcities"
+				select="com.igrow.mall.dao.mybatis.intf.CityDao.find"/>	
+		<association property="area" column="area_id" javaType="Tcities"
+				select="com.igrow.mall.dao.mybatis.intf.AreaDao.find"/>	
+		<association property="parent" column="parent_id" javaType="TagentInfo"
+				select="com.igrow.mall.dao.mybatis.intf.AgentDao.find"/>	
+	</resultMap>
+	
+
+	<!--1.查询  -->
+	<select id="find" parameterType="int" resultMap="AgentRM" useCache="false">
+		<![CDATA[
+			SELECT * FROM t_agent_info WHERE id = #{id}
+		]]>
+	</select>
+	
+	<!--2.插入-->
+	<insert id="insert" parameterType="TagentInfo"  keyProperty="id" useGeneratedKeys="true" flushCache="false">
+		<!-- <selectKey resultType="int" keyProperty="id" order="AFTER" >
+         	SELECT LAST_INSERT_ID()
+        </selectKey>  -->
+		<![CDATA[
+			insert into t_agent_info 
+				(name,agent_sn,contact_name,phone,mobile,email,address,
+				is_sms_remind,is_email_remind,is_delete,status,
+				area_id,city_id,province_id,area_desc,parent_id,
+				create_date,modify_date,create_operator,modify_operator)
+					values
+				(#{name},#{agentSn},#{contactName},#{phone},#{mobile},#{email},#{address},
+				#{isSmsRemind,javaType=Ebool,typeHandler=EnumOrdinalTypeHandler},
+				#{isEmailRemind,javaType=Ebool,typeHandler=EnumOrdinalTypeHandler},
+				#{isDelete,javaType=Ebool,typeHandler=EnumOrdinalTypeHandler},
+				#{status,javaType=Estatus,typeHandler=EnumOrdinalTypeHandler},
+				#{area.id},#{city.id},#{province.id},#{areaDesc},#{parent.id}
+				#{createDate},#{modifyDate},#{createOperator},#{modifyOperator})
+		]]>
+	</insert>
+	
+	<!--3.修改-->
+	<update id="update" parameterType="TagentInfo" flushCache="false">
+			update t_agent_info 
+				  set
+			            agent_sn = #{agentSn},	  
+						name = #{name},
+						contact_name = #{contactName},
+						phone = #{phone},
+						mobile = #{mobile},
+						email = #{email},
+						address = #{address},
+						is_sms_remind = #{isSmsRemind,javaType=Ebool,typeHandler=EnumOrdinalTypeHandler},
+						is_email_remind = #{isEmailRemind,javaType=Ebool,typeHandler=EnumOrdinalTypeHandler},
+						status = #{status,javaType=Estatus,typeHandler=EnumOrdinalTypeHandler},
+						area = #{area.id},
+						city = #{city.id},
+						province = #{province.id},
+						area_desc = #{areaDesc},
+						modify_date = #{modifyDate},
+						modify_operator = #{modifyOperator},
+					where id = #{id}
+	</update>
+	
+	<!--4.删除-->
+	<delete id="delete" parameterType="TagentInfo" flushCache="false">
+		<![CDATA[
+			update t_agent_info 
+				  set
+				  is_delete = 1,
+				  status = 0
+				   where id = #{id}
+		]]>
+	</delete>
+	
+	<!--5.查询总数量 -->
+	<select id="getTotalCount" resultType="long" useCache="false">
+		<![CDATA[
+			SELECT count("id") FROM t_agent_info
+		]]>
+	</select>
+	
+	<!--6.查询总记录集 -->
+	<select id="findAllList" resultMap="AgentRM" useCache="false">
+		<![CDATA[
+			SELECT * FROM t_agent_info where is_delete = 0 and status = 1
+		]]>
+	</select>
+	
+	<!--7.依据条件查询记录集 -->
+	<select id="findListBy" parameterType="hashMap" resultMap="AgentRM" useCache="false">
+			SELECT * FROM t_agent_info where is_delete = 0 and status = 1
+			     <if test="name != null">
+				  	and name like   "%"#{name}"%" 
+			     </if>
+				 <if test="orderBy != null and order != null">
+				 	ORDER BY ${orderBy} ${order}
+				 </if>
+				 <if test="firstIndex != null and pageSize != null">
+				 	LIMIT #{firstIndex} ,#{pageSize}
+				 </if>
+				
+	</select>
+	
+	<!--8.依据条件查询数量 -->
+	<select id="getCountBy" parameterType="hashMap" resultType="long" useCache="false">
+			SELECT count(`id`) FROM t_agent_info where is_delete = 0 and status = 1
+		  <if test="name != null">
+			  	and name like   "%"#{name}"%" 
+		  </if>
+	</select>
+	
+	<!--9.根据酒店名称查询  -->
+	<select id="findByName" parameterType="String" resultMap="AgentRM" useCache="false">
+		<![CDATA[
+			SELECT * FROM t_agent_info WHERE name = #{name} and is_delete = 0
+				LIMIT 0 ,1
+		]]>
+	</select>
+	
+	
+</mapper>
